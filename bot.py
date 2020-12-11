@@ -21,11 +21,10 @@ async def help(ctx):
         color = discord.Color.dark_red()
     )
     em.add_field(name="addjob", value="Run this command to add a new job/bounty to the dashboard [>addjob | >aj]",inline=False)
-    em.add_field(name="displayjobs", value="Run this command to display all jobs, even if they've been completed [>displayjobs | >dj]",inline=False)
     em.add_field(name="displayavailable", value="Run this command to display all jobs that haven't been done. [>displayavailable | >da]",inline=False)
     em.add_field(name="displayfinished", value="Run this command to display all jobs that have been done. [>displayfinished | >df]",inline=False)
     em.add_field(name="jobinfo", value="Run this command to only see a single job specified [>jobinfo <title of job> | >ji <title of job>]",inline=False)
-    em.add_field(name="finishjob", value="Run this command to mark a job as finished [>finishjob <title of job> | >fj <title of job>]",inline=False)
+    em.add_field(name="finishjob", value="Run this command to mark a job as finished [>finishjob <USERID or Ping of person that did the job> | >fj <USERID or Ping of person that did the job>]",inline=False)
     em.add_field(name="deletejob", value="Run this command to delete a job from the listing, its similar to >finishjob, but it entirely erases it from the database [>deletejob <title of job> | >delj <title of job>]",inline=False)
     em.add_field(name="revertfinishedjob", value="Run this command to unmark a job as finished [>revertfinishedjob <title of job> | >rfj]",inline=False)
     await ctx.send(embed = em)
@@ -49,7 +48,10 @@ async def addjob(ctx):
     if title.lower() == "cancel":
         await ctx.send("Command Cancelled.")
         return
-    
+    for job in jobs['jobs']:
+        if job['title'].lower() == title.lower():
+            await ctx.send("Title is already in use, please re-run the command")
+            return
     #Description
     em2 = discord.Embed(
         title = "What is the description of the job?",
@@ -98,10 +100,6 @@ async def addjob(ctx):
         await ctx.send("Job adding cancelled.")
         return
     if response.lower() == 'go ahead':
-        for job in jobs['jobs']:
-            if job['title'].lower() == title.lower():
-                await ctx.send("Title is already in use, please choose another one")
-                return
         jobs['jobs'].append({
             'title' : title,
             'description' : description,
@@ -116,18 +114,6 @@ async def addjob(ctx):
     else:
         await ctx.send("Unknown Response, job adding still cancelled.")
 
-
-
-@client.command(aliases=['dj'])
-async def displayjobs(ctx):
-    em = discord.Embed(
-        title = "All Jobs",
-        color = discord.Color.blue()
-    )
-    for job in jobs['jobs']:
-        if job['availability'] != 'deleted':
-            em.add_field(name=f" <:credits:647021662662819850> {job['price']} - {job['title']} - {job['availability']}", value = job['description'], inline=False)
-    await ctx.send(embed = em)
 
 @client.command(aliases=['da'])
 async def displayavailable(ctx):
@@ -169,7 +155,7 @@ async def jobinfo(ctx, *,jobname):
             await ctx.send(embed = em)  
             return
 
-    await ctx.send("```Sorry, can't find the job you were looking for. Try checking your spelling, or do .displayjobs```") 
+    await ctx.send("```Sorry, can't find the job you were looking for. Try checking your spelling```") 
     return
 
 
@@ -206,22 +192,6 @@ async def finishjob(ctx,*,person):
     await ctx.send("```Job not found. Check the spelling of the job title```")
     return
 
-
-@client.command(aliases=['rfj'])
-@commands.has_permissions(manage_nicknames = True)
-async def revertfinishedjob(ctx,*,jobname):
-    for job in jobs['jobs']:
-        if jobname.lower() == job['title'].lower():
-            if job['availability'] == 'not available':
-                job['availability'] = 'available'
-                with open('storage.json', 'w+') as f:
-                    json.dump(jobs,f)
-                await ctx.send("```Job availablity updated```")
-                return
-            else:
-                await ctx.send("```Job is already available```")
-    await ctx.send("```Job not found. Check the spelling of the job title```")
-    return
 
 @client.command(aliases=['delj'])
 @commands.has_permissions(manage_nicknames = True)
