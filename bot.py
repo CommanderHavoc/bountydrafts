@@ -162,8 +162,10 @@ async def jobinfo(ctx, *,jobname):
             )
             em.add_field(name="Description:", value = job['description'], inline=False)
             em.add_field(name = "Price:", value = f"{job['price']} <:credits:647021662662819850>", inline=False)
-            em.add_field(name= "Availability:", value = f"{job['availability']}")
-    
+            em.add_field(name= "Availability:", value = f"{job['availability']}", inline=False)
+            em.add_field(name="People who've done the job:", value="** **")
+            for userid in job['people']:
+                em.add_field(name="** **", value=f"<@{userid}>", inline = False)
             await ctx.send(embed = em)  
             return
 
