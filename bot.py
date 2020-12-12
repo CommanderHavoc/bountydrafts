@@ -163,34 +163,40 @@ async def jobinfo(ctx, *,jobname):
 @client.command(aliases=['fj'])
 @commands.has_permissions(manage_nicknames = True)
 async def finishjob(ctx,*,person):
-    removeChar = ["<@!",">"]
-    personlist = person.split()
-    newpsnlst = []
-    for userid in personlist:
-        for word in removeChar:
-            userid = userid.replace(word,'')
-        newpsnlst.append(int(userid))
-    def check(message):
-        return message.author == ctx.author and message.channel == ctx.channel
-    em = discord.Embed(
-        title = "What is the name of the job?",
-        color = discord.Color.dark_blue()
-    )
-    em.set_footer(text = "Type cancel to cancel")
-    await ctx.send(embed = em)
-    jobname = str((await client.wait_for('message', check=check)).content)
-    if jobname == 'cancel':
-        return
-    for job in jobs['jobs']:
-        if jobname.lower() == job['title'].lower():
-            job['availability'] = 'not available'
-            job['people'] = newpsnlst
-            with open('storage.json', 'w+') as f:
-                json.dump(jobs,f)
-            await ctx.send("```Job availablity updated```")
+    for char in person:
+        if char == "<" or char == "@"  or char == ">" or len(person) == 18:
+            removeChar = ["<@!",">"]
+            personlist = person.split()
+            newpsnlst = []
+            for userid in personlist:
+                for word in removeChar:
+                    userid = userid.replace(word,'')
+                newpsnlst.append(int(userid))
+            def check(message):
+                return message.author == ctx.author and message.channel == ctx.channel
+            em = discord.Embed(
+                title = "What is the name of the job?",
+                color = discord.Color.dark_blue()
+            )
+            em.set_footer(text = "Type cancel to cancel")
+            await ctx.send(embed = em)
+            jobname = str((await client.wait_for('message', check=check)).content)
+            if jobname == 'cancel':
+                await ctx.send("Canceled")
+                return
+            for job in jobs['jobs']:
+                if jobname.lower() == job['title'].lower():
+                    job['availability'] = 'not available'
+                    job['people'] = newpsnlst
+                    with open('storage.json', 'w+') as f:
+                        json.dump(jobs,f)
+                    await ctx.send("```Job availablity updated```")
+                    return
+            await ctx.send("```Job not found. Check the spelling of the job title```")
             return
-    await ctx.send("```Job not found. Check the spelling of the job title```")
-    return
+        else:
+            await ctx.send("That is not a valid ping/UserID. Command Cancelled.")
+            return
 
 
 @client.command(aliases=['delj'])
