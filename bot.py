@@ -6,7 +6,7 @@ import random
 import string
 
 client = commands.Bot(command_prefix=">")
-token = 'id'
+token = 'Your Token'
 client.remove_command('help')
 
 with open('storage.json', encoding='utf-8') as f:
@@ -22,12 +22,13 @@ async def help(ctx):
         title = "Help",
         color = discord.Color.dark_red()
     )
-    em.add_field(name="addjob", value="Run this command to add a new job/bounty to the list [>addjob | >aj]",inline=False)
-    em.add_field(name="displayavailable", value="Run this command to display all jobs that haven't been done. [>displayavailable | >da]",inline=False)
-    em.add_field(name="displayfinished", value="Run this command to display all jobs that have been done. [>displayfinished | >df]",inline=False)
-    em.add_field(name="jobinfo", value="Run this command to only see a single job specified [>jobinfo <Job ID> | >ji <Job ID>]",inline=False)
-    em.add_field(name="finishjob", value="Run this command to mark a job as finished [>finishjob <Job ID> <USERID or Ping of person that did the job> | >fj <Job ID> <USERID or Ping of person that did the job>]",inline=False)
-    em.add_field(name="deletejob", value="Run this command to delete a job from the listing, its similar to >finishjob, but it entirely erases it from the database [>deletejob <Job ID> | >delj <Job ID>]",inline=False)
+    em.add_field(name="addjob", value="Run this command to add a new job/bounty to the list [>addjob/aj]",inline=False)
+    em.add_field(name="displayavailable", value="Run this command to display all jobs that haven't been done. [>displayavailable/da]",inline=False)
+    em.add_field(name="displayfinished", value="Run this command to display all jobs that have been done. [>displayfinished/df]",inline=False)
+    em.add_field(name="jobinfo", value="Run this command to only see a single job specified [>jobinfo/ji <Job ID>]",inline=False)
+    em.add_field(name="finishjob", value="Run this command to mark a job as finished [>finishjob/fj <Job ID> <USERID or Ping of person that did the job>]",inline=False)
+    em.add_field(name="deletejob", value="Run this command to delete a job from the listing, its similar to >finishjob, but it entirely erases it from the database [>deletejob/delj <Job ID>]",inline=False)
+    em.add_field(name="editjob", value = "Run this command to edit a part of an existing job. [>editjob/ej <Job ID> <Part you want to edit (tit, des, pri, ava, peo)> <Replacement text for the edit>]")
     em.add_field(name = "rpsbot", value = "Run this command to play Rock Paper Scissors with the bot [>rpsbot]", inline = False)
     await ctx.send(embed = em)
 
@@ -208,8 +209,6 @@ async def finishjob(ctx,id,*,person):
                 for word in removeChar:
                     userid = userid.replace(word,'')
                 newpsnlst.append(int(userid))
-            def check(message):
-                return message.author == ctx.author and message.channel == ctx.channel
             for job in jobs['jobs']:
                 if id.upper() == job['id'].upper():
                     job['availability'] = 'not available'
@@ -234,6 +233,68 @@ async def deletejob(ctx,id):
     with open('storage.json', 'w+') as f:
                     json.dump(jobs,f)
 
+
+@client.command(aliases = ['ej'])
+@commands.has_permissions(manage_nicknames = True)
+async def editjob(ctx,id,part,*,text):
+    dict_part = {
+        "tit" : "title",
+        "des" : "description",
+        "pri" : "price",
+        "ava" : "availability",
+        "dif" : "difficulty",
+        "peo" : "people"
+    }
+    part_list = ["tit","des","pri","ava","dif","peo"]
+    part = part.lower()
+    for job in jobs['jobs']:
+        if id.upper() == job['id'].upper():
+            if part in part_list:
+                part = dict_part[part]
+            else:
+                await ctx.send("```I do not recognize the part in which you want to edit!```")
+                return
+
+            #Checking some specifics
+            if part == "difficulty" or part == "availability" or part == "title" or part == "description":
+                job[part] = text
+                with open('storage.json', 'w+') as f:
+                    json.dump(jobs,f)
+                await ctx.send(f"```Job {part} updated!```")
+                return
+
+            elif part == "price":
+                text = text.replace(',','')
+                if text.isdigit() == False:
+                    await ctx.send("```You did not enter a valid number!```")
+                    return
+                if int(text) < 3000000:
+                    await ctx.send("```The price has to be higher than 3 million!```")
+                    return
+                job["price"] = text
+                with open('storage.json', 'w+') as f:
+                    json.dump(jobs,f)
+                await ctx.send(f"```Job {part} updated!```")
+                return 
+            
+            elif part == "people":
+                for char in text:
+                    if char == "<" or char == "@"  or char == ">" or len(text) == 18:
+                        removeChar = ["<@!",">"]
+                        personlist = text.split()
+                        newpsnlst = []
+                        for userid in personlist:
+                            for word in removeChar:
+                                userid = userid.replace(word,'')
+                            newpsnlst.append(int(userid))
+                        job['people'] = newpsnlst
+                        with open('storage.json', 'w+') as f:
+                            json.dump(jobs,f)
+                        await ctx.send(f"```Job {part} updated!```")
+                        return
+                    else:
+                        await ctx.send("```Not a valid user ID or ping!")
+                        return
 
 
 """
